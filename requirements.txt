@@ -11,3 +11,4 @@ python-multipart
 requests
 faker
 reportlab
+pymongo

@@ -11,349 +11,124 @@ Objectif : développer une **plateforme capable d’analyser automatiquement des
 
 ---
 
-# Fonctionnalités principales
+# 🚀 Fonctionnalités principales
 
 ### 1️ Upload multi-documents
-
 Interface permettant de charger plusieurs documents administratifs.
 
 ### 2️ Classification automatique
-
 Détection automatique du type de document :
+* Factures
+* Devis
+* Attestations SIRET / KBIS / Vigilance URSSAF
+* RIB
 
-* facture
-* devis
-* attestation
-* contrat
+### 3️ OCR & Extraction d'informations
+* Extraction du texte à partir des documents PDF ou images.
+* Extraction de données structurées : SIREN, SIRET, montants, dates, noms d'entreprises.
 
-### 3️ OCR (Optical Character Recognition)
+### 4️ Génération de Dataset Synthétique & Réel
+* **Données réelles** : Intégration de la base SIRENE (INSEE) avec 20 entreprises stockées en MongoDB.
+* **Templates Pro** : Génération de documents réalistes (PDF) avec calculs de TVA, en-têtes officiels et pieds de page.
+* **Robustesse** : Simulation de scans bruités (rotation, flou, bruit numérique) et insertion d'erreurs métier (calculs faux, SIRET invalides) pour tester la détection de fraude.
 
-Extraction du texte à partir des documents PDF ou images.
-
-### 4️ Extraction d’informations
-
-Extraction automatique de :
-
-* SIREN
-* SIRET
-* montants
-* dates
-* nom entreprise
-
-### 5️ Détection d’incohérences
-
-Exemples :
-
-* SIREN différent entre facture et attestation
-* montant facture ≠ devis
-* SIRET invalide
-
-### 6️ Data Lake
-
-Architecture **Medallion** :
-
-Bronze → documents bruts
-Silver → texte OCR
-Gold → données structurées
-
-### 7️ Dashboard / Frontend
-
-Interface permettant de visualiser :
-
-* les documents analysés
-* les informations extraites
-* les alertes de fraude
+### 5️ Data Lake (Architecture Medallion)
+* **Bronze** : Documents bruts.
+* **Silver** : Texte extrait par OCR.
+* **Gold** : Données structurées prêtes pour l'analyse.
 
 ---
 
-# Architecture du projet
+# 🏗️ Architecture Technique
 
-Pipeline global :
+### Pipeline Global
+1. **Source** : Upload client ou Dataset généré via `StockUniteLegale_utf8.csv`.
+2. **Stockage** : Persistence des documents et données métiers dans **MongoDB**.
+3. **Traitement** : Pipeline OCR (Tesseract) → Extraction (NLP/Regex) → Validation.
+4. **Dashboard** : Visualisation des alertes et données exploitables.
 
-Upload documents
-↓
-Stockage Bronze (documents bruts)
-↓
-OCR extraction
-↓
-Classification document
-↓
-Extraction informations
-↓
-Détection incohérences
-↓
-Stockage Gold (données structurées)
-↓
-Dashboard / CRM
-
----
-
-# Structure du projet
-
+### Structure des dossiers
 ```
 hackathon-doc-processing/
-
-backend/
-    app/
-        main.py
-        routes/
-            upload.py
-        pipeline/
-            ocr.py
-            classifier.py
-            extractor.py
-            validator.py
-        services/
-            storage.py
-            database.py
-
-frontend/
-    app.py
-
-data/
-    bronze/
-    silver/
-    gold/
-
-models/
-notebooks/
-tests/
-
-requirements.txt
-README.md
+├── backend/                # FastAPI / Logique métier
+├── frontend/               # Streamlit Dashboard
+├── data/                   # Data Lake (Bronze/Silver/Gold)
+├── dataset/
+│   └── generator/          # Scripts de génération de documents
+│       ├── generate_invoices.py
+│       ├── import_companies.py
+│       └── generated/      # Fichiers PDF/JPG produits
+├── docker-compose.yml      # Orchestration (Backend, Mongo, Frontend)
+└── requirements.txt        # Dépendances Python
 ```
 
 ---
 
-# Installation
+# 🛠️ Installation & Démarrage
 
-## 1 Cloner le projet
+## 1️ Via Docker (Recommandé)
+Le projet utilise Docker pour orchestrer le backend, le frontend et la base de données MongoDB.
 
+```bash
+docker-compose up --build
 ```
-git clone https://github.com/ORG/hackathon-doc-processing.git
-cd hackathon-doc-processing
-```
 
----
+## 2️ Installation Manuelle
 
-## 2️ Créer un environnement Python
+### Dépendances Système
+* **Tesseract OCR** : Doit être installé sur votre machine.
 
+### Environnement Python
 Avec conda :
-
-```
+```bash
 conda create -n hackathon python=3.10
 conda activate hackathon
 ```
-
 ou avec venv :
-
+```bash
+source venv/bin/activate  # (ou venv\Scripts\activate sur Windows)
 ```
-python -m venv venv
-source venv/bin/activate
-```
-
-Windows :
-
-```
-venv\Scripts\activate
-```
-
----
-
-## 3️ Installer les dépendances
-
-```
+```bash
+# Installation
 pip install -r requirements.txt
 ```
+### Initialisation du Dataset
+Pour générer les données à partir de la base SIRENE (nécessite le fichier `StockUniteLegale_utf8.csv` à la racine) :
 
----
+```bash
+# 1. Lancer MongoDB
+docker-compose up -d mongodb
 
-## 4️ Lancer le backend
+# 2. Importer les entreprises de la base SIRENE
+python dataset/generator/import_companies.py
 
+# 3. Générer le dataset (PDF/JPG)
+python dataset/generator/generate_invoices.py
 ```
+
+### Lancement des services
+
+Lancer le backend (FastAPI) :
+```bash
 uvicorn backend.app.main:app --reload
 ```
 
-API accessible :
-
-```
-http://127.0.0.1:8000
-```
-
-Documentation automatique :
-
-```
-http://127.0.0.1:8000/docs
-```
-
----
-
-## 5️ Lancer le frontend
-
-```
+Lancer le frontend (Streamlit) :
+```bash
 streamlit run frontend/app.py
 ```
 
 ---
 
-# Organisation de l’équipe (6 personnes)
+# 🧠 Technologies utilisées
 
-## Backend / API
-
-Responsable :
-
-* API FastAPI
-* endpoints
-* orchestration pipeline
-
-Fichiers :
-
-```
-backend/app/main.py
-backend/app/routes
-```
+* **Backend** : FastAPI, Python, MongoDB
+* **OCR** : Tesseract, OpenCV, Pillow, ReportLab (Génération PDF)
+* **Data** : Faker (Données synthétiques), Base SIRENE (Données réelles)
+* **Frontend** : Streamlit
+* **DevOps** : Docker, Docker-Compose
 
 ---
 
-## OCR / Traitement documents
-
-Responsable :
-
-* conversion PDF → image
-* preprocessing
-* extraction texte
-
-Fichiers :
-
-```
-backend/app/pipeline/ocr.py
-```
-
----
-
-## Extraction d’informations
-
-Responsable :
-
-* extraction SIREN
-* extraction montants
-* extraction dates
-* regex / NLP
-
-Fichiers :
-
-```
-backend/app/pipeline/extractor.py
-```
-
----
-
-## Classification documents
-
-Responsable :
-
-* modèle classification
-* facture / devis / attestation
-* ML ou règles
-
-Fichiers :
-
-```
-backend/app/pipeline/classifier.py
-```
-
----
-
-## Data / Stockage
-
-Responsable :
-
-* Data Lake
-* stockage bronze/silver/gold
-* base de données
-
-Fichiers :
-
-```
-backend/app/services
-data/
-```
-
----
-
-## Frontend / Dashboard
-
-Responsable :
-
-* interface upload
-* visualisation résultats
-* alertes fraude
-
-Fichiers :
-
-```
-frontend/app.py
-```
-
----
-
-
-# Exemple d’incohérences détectées
-
-SIREN différent entre documents
-
-```
-facture.siren != attestation.siren
-```
-
-Montant facture différent du devis
-
-```
-facture.montant > devis.montant
-```
-
-SIRET invalide
-
-```
-len(siret) != 14
-```
-
----
-
-# Technologies utilisées
-
-Backend
-
-* FastAPI
-* Python
-
-OCR
-
-* Tesseract
-* OpenCV
-
-NLP
-
-* spaCy
-* regex
-
-Machine Learning
-
-* scikit-learn
-
-Frontend
-
-* Streamlit
-
----
-
-# Objectif final
-
-Une plateforme capable de :
-
-* analyser automatiquement des documents administratifs
-* extraire les informations importantes
-* détecter des incohérences
-* aider les entreprises à automatiser les contrôles documentaires
-
----
+# 🎯 Objectif Final
+Fournir une solution de bout en bout pour automatiser les contrôles de conformité KYC/KYB en détectant instantanément les documents falsifiés ou les erreurs de saisie administrative.
