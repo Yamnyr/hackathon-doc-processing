@@ -1,4 +1,6 @@
-__pycache__
+__pycache__/
+venv/
+*.pyc
 .env
 .venv
 .vscode
@@ -8,4 +10,5 @@ __pycache__
 .env.example
 .env
 dataset/StockUniteLegale_utf8.csv
+dataset/generator/StockUniteLegale_utf8.csv
 dataset/generator/generated
