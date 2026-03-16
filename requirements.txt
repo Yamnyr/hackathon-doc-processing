@@ -1,10 +1,11 @@
 fastapi
 uvicorn
 pytesseract
-opencv-python
+opencv-python-headless
 pdfplumber
 pandas
 scikit-learn
 spacy
 streamlit
 python-multipart
+requests

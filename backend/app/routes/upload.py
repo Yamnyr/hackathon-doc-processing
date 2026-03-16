@@ -3,7 +3,7 @@ import os
 
 router = APIRouter()
 
-UPLOAD_DIR = "data/bronze"
+UPLOAD_DIR = "data/raw"
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 

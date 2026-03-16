@@ -1,5 +1,8 @@
 import streamlit as st
 import requests
+import os
+
+backend_url = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 st.title("Document Processing")
 
@@ -13,7 +16,7 @@ if st.button("Upload"):
     if files:
 
         response = requests.post(
-            "http://localhost:8000/upload",
+            f"{backend_url}/upload",
             files=[("files", f) for f in files]
         )
 
