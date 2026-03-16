@@ -9,3 +9,5 @@ spacy
 streamlit
 python-multipart
 requests
+faker
+reportlab
