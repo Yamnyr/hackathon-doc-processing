@@ -1,4 +1,4 @@
-# 🚀 Hackathon – Traitement automatique de documents administratifs
+# Hackathon – Traitement automatique de documents administratifs
 
 Projet réalisé dans le cadre du hackathon IPSSI.
 
@@ -11,13 +11,13 @@ Objectif : développer une **plateforme capable d’analyser automatiquement des
 
 ---
 
-# 🧠 Fonctionnalités principales
+# Fonctionnalités principales
 
-### 1️⃣ Upload multi-documents
+### 1️ Upload multi-documents
 
 Interface permettant de charger plusieurs documents administratifs.
 
-### 2️⃣ Classification automatique
+### 2️ Classification automatique
 
 Détection automatique du type de document :
 
@@ -26,11 +26,11 @@ Détection automatique du type de document :
 * attestation
 * contrat
 
-### 3️⃣ OCR (Optical Character Recognition)
+### 3️ OCR (Optical Character Recognition)
 
 Extraction du texte à partir des documents PDF ou images.
 
-### 4️⃣ Extraction d’informations
+### 4️ Extraction d’informations
 
 Extraction automatique de :
 
@@ -40,7 +40,7 @@ Extraction automatique de :
 * dates
 * nom entreprise
 
-### 5️⃣ Détection d’incohérences
+### 5️ Détection d’incohérences
 
 Exemples :
 
@@ -48,7 +48,7 @@ Exemples :
 * montant facture ≠ devis
 * SIRET invalide
 
-### 6️⃣ Data Lake
+### 6️ Data Lake
 
 Architecture **Medallion** :
 
@@ -56,7 +56,7 @@ Bronze → documents bruts
 Silver → texte OCR
 Gold → données structurées
 
-### 7️⃣ Dashboard / Frontend
+### 7️ Dashboard / Frontend
 
 Interface permettant de visualiser :
 
@@ -66,7 +66,7 @@ Interface permettant de visualiser :
 
 ---
 
-# 🏗 Architecture du projet
+# Architecture du projet
 
 Pipeline global :
 
@@ -88,7 +88,7 @@ Dashboard / CRM
 
 ---
 
-# 📂 Structure du projet
+# Structure du projet
 
 ```
 hackathon-doc-processing/
@@ -125,9 +125,9 @@ README.md
 
 ---
 
-# ⚙️ Installation
+# Installation
 
-## 1️⃣ Cloner le projet
+## 1 Cloner le projet
 
 ```
 git clone https://github.com/ORG/hackathon-doc-processing.git
@@ -136,7 +136,7 @@ cd hackathon-doc-processing
 
 ---
 
-## 2️⃣ Créer un environnement Python
+## 2️ Créer un environnement Python
 
 Avec conda :
 
@@ -160,7 +160,7 @@ venv\Scripts\activate
 
 ---
 
-## 3️⃣ Installer les dépendances
+## 3️ Installer les dépendances
 
 ```
 pip install -r requirements.txt
@@ -168,7 +168,7 @@ pip install -r requirements.txt
 
 ---
 
-## 4️⃣ Lancer le backend
+## 4️ Lancer le backend
 
 ```
 uvicorn backend.app.main:app --reload
@@ -188,7 +188,7 @@ http://127.0.0.1:8000/docs
 
 ---
 
-## 5️⃣ Lancer le frontend
+## 5️ Lancer le frontend
 
 ```
 streamlit run frontend/app.py
@@ -196,9 +196,9 @@ streamlit run frontend/app.py
 
 ---
 
-# 👥 Organisation de l’équipe (6 personnes)
+# Organisation de l’équipe (6 personnes)
 
-## 👨‍💻 Backend / API
+## Backend / API
 
 Responsable :
 
@@ -215,7 +215,7 @@ backend/app/routes
 
 ---
 
-## 👨‍💻 OCR / Traitement documents
+## OCR / Traitement documents
 
 Responsable :
 
@@ -231,7 +231,7 @@ backend/app/pipeline/ocr.py
 
 ---
 
-## 👨‍💻 Extraction d’informations
+## Extraction d’informations
 
 Responsable :
 
@@ -248,7 +248,7 @@ backend/app/pipeline/extractor.py
 
 ---
 
-## 👨‍💻 Classification documents
+## Classification documents
 
 Responsable :
 
@@ -264,7 +264,7 @@ backend/app/pipeline/classifier.py
 
 ---
 
-## 👨‍💻 Data / Stockage
+## Data / Stockage
 
 Responsable :
 
@@ -281,7 +281,7 @@ data/
 
 ---
 
-## 👨‍💻 Frontend / Dashboard
+## Frontend / Dashboard
 
 Responsable :
 
@@ -297,56 +297,8 @@ frontend/app.py
 
 ---
 
-# 📅 Planning du hackathon
 
-## Lundi
-
-Architecture + setup projet
-
-* repo GitHub
-* structure projet
-* distribution des tâches
-
----
-
-## Mardi
-
-Pipeline documents
-
-* upload documents
-* OCR extraction
-
----
-
-## Mercredi
-
-IA / NLP
-
-* classification documents
-* extraction informations
-
----
-
-## Jeudi
-
-Vérification + dashboard
-
-* détection incohérences
-* interface frontend
-
----
-
-## Vendredi
-
-Finalisation
-
-* pipeline complet
-* démo
-* préparation pitch
-
----
-
-# 🧪 Exemple d’incohérences détectées
+# Exemple d’incohérences détectées
 
 SIREN différent entre documents
 
@@ -368,7 +320,7 @@ len(siret) != 14
 
 ---
 
-# 🚀 Technologies utilisées
+# Technologies utilisées
 
 Backend
 
@@ -395,7 +347,7 @@ Frontend
 
 ---
 
-# 🎯 Objectif final
+# Objectif final
 
 Une plateforme capable de :
 
