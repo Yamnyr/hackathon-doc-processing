@@ -1,1 +1,0 @@
-facture n°001 SIREN 123456789 montant 100,00 €
