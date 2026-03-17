@@ -1,0 +1,24 @@
+{
+  "document_id": "c08ad1fb-9820-4256-8e98-2cefca69bc28",
+  "batch_id": "80a1ce5d-1669-4032-8411-713635034980",
+  "supplier_name": "Clément S.A.",
+  "siren": "665579066",
+  "siret": "",
+  "doc_type": "devis",
+  "montants": [
+    "670.00 €",
+    "4020.00 €"
+  ],
+  "anomalies": [
+    {
+      "rule_code": "SIREN_MISMATCH",
+      "message": "SIREN mismatch",
+      "severity": "high",
+      "document_ids": [
+        "c08ad1fb-9820-4256-8e98-2cefca69bc28",
+        "d3af5108-a21c-4f4b-bedd-39af96289ff0"
+      ]
+    }
+  ],
+  "status": "validated"
+}

@@ -1,0 +1,24 @@
+{
+  "document_id": "d61cc295-5a1d-4524-b65c-f90065e534d4",
+  "batch_id": "80a1ce5d-1669-4032-8411-713635034980",
+  "supplier_name": "Julien",
+  "siren": "182802157",
+  "siret": "",
+  "doc_type": "devis",
+  "montants": [
+    "1887.20 €",
+    "11323.20 €"
+  ],
+  "anomalies": [
+    {
+      "rule_code": "SIREN_MISMATCH",
+      "message": "SIREN mismatch",
+      "severity": "high",
+      "document_ids": [
+        "d61cc295-5a1d-4524-b65c-f90065e534d4",
+        "d3af5108-a21c-4f4b-bedd-39af96289ff0"
+      ]
+    }
+  ],
+  "status": "validated"
+}

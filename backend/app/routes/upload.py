@@ -1,3 +1,5 @@
+import re
+
 from fastapi import APIRouter, UploadFile, File
 import os
 import json
@@ -8,6 +10,53 @@ from backend.app.pipeline.classifier import classify_document
 from backend.app.pipeline.validator import validate_document, check_inconsistencies
 
 router = APIRouter()
+init_datalake()
+
+
+def _extract_text(file_path: str) -> str:
+    """
+    Extract raw text from a file.
+    - PDF        → pdfplumber (text layer, no OCR needed)
+    - Image/WebP → Pillow converts to numpy array → pytesseract OCR
+    """
+    ext = file_path.rsplit(".", 1)[-1].lower()
+
+    if ext == "pdf":
+        import pdfplumber
+        text = ""
+        with pdfplumber.open(file_path) as pdf:
+            for page in pdf.pages:
+                text += (page.extract_text() or "") + "\n"
+        return text.strip()
+
+    # Images: use Pillow to open any format (JPG, PNG, WEBP, TIFF, BMP …)
+    # then convert to a numpy array for pytesseract
+    try:
+        import numpy as np
+        import pytesseract
+        from PIL import Image
+        import cv2
+
+        # Hardcode Tesseract path so it works regardless of system PATH
+        pytesseract.pytesseract.tesseract_cmd = (
+            r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+        )
+
+        pil_img   = Image.open(file_path).convert("RGB")
+        img_array = np.array(pil_img)
+        gray      = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+        return pytesseract.image_to_string(gray)
+
+    except pytesseract.TesseractNotFoundError:
+        print("[WARN] Tesseract not found at C:\\Program Files\\Tesseract-OCR\\tesseract.exe")
+        return ""
+    except Exception as e:
+        print(f"[WARN] image OCR failed for {file_path}: {e}")
+        return ""
+
+
+_DOC_KEYWORDS = {"devis", "facture", "attestation", "invoice", "unknown"}
+
 
 RAW_DIR = "data/raw"
 CLEAN_DIR = "data/clean"
@@ -22,6 +71,7 @@ os.makedirs(CURATED_DIR, exist_ok=True)
 async def upload_files(files: list[UploadFile] = File(...)):
     results = []
 
+    # ── BRONZE + SILVER ──────────────────────────────────────────────────────
     for file in files:
         filename = file.filename
         file_path = os.path.join(RAW_DIR, filename)

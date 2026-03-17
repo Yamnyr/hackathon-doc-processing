@@ -10,3 +10,4 @@ __pycache__
 dataset/StockUniteLegale_utf8.csv
 dataset/generator/generated
 env
+.venv

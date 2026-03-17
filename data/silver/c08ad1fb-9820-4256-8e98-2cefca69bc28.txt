@@ -1,0 +1,16 @@
+DEVIS
+
+DE: Clément S.A. A: Costa SA
+SIRET: 665 579 066
+
+Description | Qté | Prix Unit. | Total
+
+Le droit de changer sans souci | 3 | 420 € | 1260 €
+Le plaisir d'innover a l'état | 2| 193 €| 386 €
+
+Le plaisir de louer de manieére | 8 | 213 € | 1704 €
+| | Total HT | 3350 €
+
+| | TVA (20%) | 670.00 €
+
+| | TOTAL TTC | 4020.00 €

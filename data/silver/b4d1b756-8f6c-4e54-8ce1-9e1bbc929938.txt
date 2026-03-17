@@ -1,0 +1,18 @@
+DEVIS
+
+DE: Barthelemy SA A: Lévéque
+SIRET: 914 574 140
+
+Description | Qté | Prix Unit. | Total
+
+Le droit de louer autrement | 3 | 279 € | 837 €
+
+La possibilité d'avancer a l'é | 8 | 473 € | 3784 €
+Le pouvoir de louer a la point | 6 | 422 € | 2532 €
+Le droit de rouler autrement | 6 | 254 € | 1524 €
+
+| | Total HT | 8677 €
+
+| | TVA (20%) | 1735.40 €
+
+| | TOTAL TTC | 10412.40€

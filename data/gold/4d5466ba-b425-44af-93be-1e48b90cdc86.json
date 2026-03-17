@@ -1,0 +1,24 @@
+{
+  "document_id": "4d5466ba-b425-44af-93be-1e48b90cdc86",
+  "batch_id": "80a1ce5d-1669-4032-8411-713635034980",
+  "supplier_name": "Deschamps",
+  "siren": "592433510",
+  "siret": "",
+  "doc_type": "devis",
+  "montants": [
+    "1758.20 €",
+    "10549.20 €"
+  ],
+  "anomalies": [
+    {
+      "rule_code": "SIREN_MISMATCH",
+      "message": "SIREN mismatch",
+      "severity": "high",
+      "document_ids": [
+        "4d5466ba-b425-44af-93be-1e48b90cdc86",
+        "d3af5108-a21c-4f4b-bedd-39af96289ff0"
+      ]
+    }
+  ],
+  "status": "validated"
+}
