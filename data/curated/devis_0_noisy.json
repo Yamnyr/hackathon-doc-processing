@@ -1,0 +1,24 @@
+{
+  "filename": "devis_0_noisy.jpg",
+  "document_type": "devis",
+  "text": "SOCIETE DES SUCRERIES DU MARQUENTERRE\n\nDEVIS\n\nREF: DEV-2026-0000\nDATE: 17/03/2026\n\nETABLISSEMENTS SUEUR &T F\n952, rue Faure 47701 Saint Edouardisur-h\n\nL'assurance d‘avancer a la pointe 654€\nLe pouvoir d'avancer a la pointe 765€\nLa liberté d'évoluer autrement 3995€\nL'art de concrétiser vos projets pl 1118€\nLe confort de concrétiser vos proje 830€\nLe droit d'atteindre vos buts autre 3130€\nL’avantage d'avancer de maniére sar 1174€\nL'art de concrétiser vos projets na 1692€\nL'art d'iinnover plus rapidement 976€\n\nTotal HT: 14334€\nTVA (20%): 2866.80€\nTOTAL TTC: 17200.80€",
+  "extracted_data": {
+    "company_name": "SOCIETE DES SUCRERIES DU MARQUENTERRE",
+    "reference": "DEV-2026-0000",
+    "siren": [],
+    "siret": [],
+    "dates": [
+      "17/03/2026"
+    ],
+    "total_ht": "14334€",
+    "tva_rate": "20",
+    "tva_amount": "2866.80€",
+    "total_ttc": "17200.80€"
+  },
+  "validation": {
+    "is_valid": false,
+    "issues": [
+      "SIRET manquant"
+    ]
+  }
+}
