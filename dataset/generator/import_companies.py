@@ -3,7 +3,7 @@ import os
 from pymongo import MongoClient
 
 # Configuration
-CSV_PATH = "StockUniteLegale_utf8.csv"
+CSV_PATH = "dataset/StockUniteLegale_utf8.csv"
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/hackathon")
 DB_NAME = "hackathon"
 COLLECTION_NAME = "companies"
