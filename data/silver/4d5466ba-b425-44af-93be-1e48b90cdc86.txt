@@ -1,0 +1,17 @@
+DEVIS
+
+DE: Deschamps A: Schmitt
+SIRET: 592 433 510
+
+Description | Qté | Prix Unit. | Total
+
+Le confort d'atteindre vos but | 4 | 284 €| 1136 €
+La possibilité d'atteindre vos | 7 | 328 € | 2296 €
+Le droit d'innover autrement | 10 | 324 € | 3240 €
+L'art de rouler a la pointe | 3| 77 € | 231 €
+L'avantage de changer a la poi | 8 | 236 € | 1888 €
+| | Total HT | 8791 €
+
+| | TVA (20%) | 1758.20 €
+
+| | TOTAL TTC | 10549.20 €

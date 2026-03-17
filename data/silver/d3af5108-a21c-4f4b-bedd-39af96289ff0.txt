@@ -1,0 +1,19 @@
+DEVIS
+
+DE: Blin Barthelemy S.A.R.L. A: Riviére
+SIRET: 000000000
+
+Description | Qté | Prix Unit. | Total
+
+Le droit de rouler a l'état pu | 4 | 186 € | 744 €
+La possibilité de concrétiser | 4 | 249 € | 996 €
+La liberté d'avancer en toute | 6 | 470 € | 2820 €
+L'avantage d'atteindre vos but | 6 | 103 €| 618 €
+La liberté de louer sans souci | 6 | 290 € | 1740 €
+| | Total HT | 6918 €
+
+| | TVA (20%) | 1383.60 €
+
+| | TOTAL TTC | 8301.60 €
+
+DEBUG _ERROR_TYPE: WRONG_SIRET
