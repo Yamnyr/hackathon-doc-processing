@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Télécharger - ScanDocs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-white text-gray-800">
+
+    <!-- Navbar -->
+    <nav class="bg-red-600 p-4 text-white">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="home.html" class="text-2xl font-bold">ScanDocs</a>
+            <ul class="flex space-x-6">
+                <li><a href="home.html" class="hover:text-gray-300">Accueil</a></li>
+                <li><a href="upload.html" class="hover:text-gray-300">Télécharger</a></li>
+                <li><a href="mes_documents.html" class="hover:text-gray-300">Mes Documents</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Upload Section -->
+    <section class="flex items-center justify-center min-h-screen bg-gray-50">
+        <div class="text-center bg-white p-10 rounded-lg shadow-lg w-96">
+            <h2 class="text-3xl font-semibold text-red-600 mb-6">Télécharger votre document</h2>
+            <p class="text-lg text-gray-700 mb-8">Glissez-déposez ou sélectionnez un fichier PDF pour commencer.</p>
+
+            <div class="border-4 border-dashed border-gray-300 p-10 mb-6">
+                <input type="file" id="file-upload" class="hidden" accept="application/pdf, image/*">
+                <label for="file-upload" class="text-red-600 cursor-pointer hover:text-red-700">Choisir un fichier</label>
+            </div>
+
+            <button onclick="uploadFile()" class="bg-red-600 text-white px-6 py-3 rounded-full text-xl hover:bg-red-700 transition duration-300">Upload</button>
+
+            <div id="upload-message" class="mt-6 hidden text-green-600">
+                <p>Document téléchargé avec succès !</p>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        function uploadFile() {
+            document.getElementById('upload-message').classList.remove('hidden');
+        }
+    </script>
+
+</body>
+</html>
