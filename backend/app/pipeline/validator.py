@@ -20,7 +20,7 @@ def validate_document(doc: dict) -> dict:
     issues = []
 
     document_type = doc.get("document_type")
-    extracted = doc.get("extracted_data", {})g
+    extracted = doc.get("extracted_data", {})
 
     siret_list = extracted.get("siret", [])
     dates = extracted.get("dates", [])

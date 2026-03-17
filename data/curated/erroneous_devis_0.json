@@ -1,0 +1,24 @@
+{
+  "filename": "erroneous_devis_0.pdf",
+  "document_type": "devis",
+  "text": "SOCIETE BRETONNE DE TRAVAUX PUBLICS\n98, rue de Diaz 91475 Dupré-les-Bains\n\nSIRET: 00548008200012\n\nN°:\n\n: CLIENT:\nDATE : 17/03/2026\n\nOOCEUL\n88, boulevard Thérése Bruneau\n90465 Gérarddan\n\nDescription Qte PU ‘otal\nLe pouvoir de rouler avant-tout 1 427€ 427€\nLe droit d'innover en toute tranqui 1 243€ 243€\nL'avantage de concrétiser vos proje 2 448€ 896€\nL'avantage d'évoluer naturellement 2 469€ 938€\nLe droit d'avancer a sa source 2 4gi1€ 982€\nLe confort de changer a sa source 5 274€ 1370€\nLa liberté de rouler avant-tout 2 266€ §32€\nLe pouvoir de louer plus rapidement 3 385€ 1155€\nLe pouvoir de changer a la pointe 4 605€ 2420€\nTotal HT 8963€\nTVA (20%) 1792.60€\nTOTAL TTC 10755.60€\n\nSOCIETE BRETONNE DE TRAVAUX PUBLICS - Capital 41118€ - SIRET 00548008200012",
+  "extracted_data": {
+    "company_name": "SOCIETE BRETONNE DE TRAVAUX PUBLICS",
+    "reference": null,
+    "siren": [],
+    "siret": [
+      "00548008200012"
+    ],
+    "dates": [
+      "17/03/2026"
+    ],
+    "total_ht": "8963€",
+    "tva_rate": "20",
+    "tva_amount": "1792.60€",
+    "total_ttc": "10755.60€"
+  },
+  "validation": {
+    "is_valid": true,
+    "issues": []
+  }
+}
