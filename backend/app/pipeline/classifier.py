@@ -1,14 +1,52 @@
-def classify_document(text):
-
+def classify_document(text: str) -> str:
     text = text.lower()
 
-    if "facture" in text:
-        return "facture"
+    scores = {
+        "facture": 0,
+        "devis": 0,
+        "attestation": 0,
+        "rib": 0,
+    }
 
-    if "devis" in text:
-        return "devis"
+    keywords = {
+        "facture": [
+            "facture",
+            "net à payer",
+            "montant ttc",
+            "total ttc",
+            "numéro de facture",
+        ],
+        "devis": [
+            "devis",
+            "n° : dev",
+            "ref: dev",
+            "ref : dev",
+            "validité",
+            "total ht",
+        ],
+        "attestation": [
+            "attestation",
+            "urssaf",
+            "vigilance",
+            "date d'expiration",
+            "certifie",
+        ],
+        "rib": [
+            "iban",
+            "bic",
+            "rib",
+            "relevé d'identité bancaire",
+        ],
+    }
 
-    if "attestation" in text:
-        return "attestation"
+    for doc_type, words in keywords.items():
+        for word in words:
+            if word in text:
+                scores[doc_type] += 1
 
-    return "unknown"
+    best_type = max(scores, key=scores.get)
+
+    if scores[best_type] == 0:
+        return "unknown"
+
+    return best_type
