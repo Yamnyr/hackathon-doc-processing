@@ -1,0 +1,10 @@
+[
+  {
+    "supplier_name": "ACME SAS",
+    "siren": "123456789",
+    "siret": "12345678900010",
+    "validated_documents": [
+      "8ef5c097-554d-41d1-83e5-90ceedcf0fb8"
+    ]
+  }
+]
