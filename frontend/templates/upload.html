@@ -24,24 +24,30 @@
     <section class="flex items-center justify-center min-h-screen bg-gray-50">
         <div class="text-center bg-white p-10 rounded-lg shadow-lg w-96">
             <h2 class="text-3xl font-semibold text-red-600 mb-6">Télécharger votre document</h2>
-            <p class="text-lg text-gray-700 mb-8">Glissez-déposez ou sélectionnez un fichier PDF pour commencer.</p>
+            <p class="text-lg text-gray-700 mb-8">Glissez-déposez ou sélectionnez un ou plusieurs fichiers PDF pour commencer.</p>
 
             <div class="border-4 border-dashed border-gray-300 p-10 mb-6">
-                <input type="file" id="file-upload" class="hidden" accept="application/pdf, image/*">
-                <label for="file-upload" class="text-red-600 cursor-pointer hover:text-red-700">Choisir un fichier</label>
+                <!-- Ajout de l'attribut "multiple" pour permettre le téléchargement de plusieurs fichiers -->
+                <input type="file" id="file-upload" class="hidden" accept="application/pdf, image/*" multiple>
+                <label for="file-upload" class="text-red-600 cursor-pointer hover:text-red-700">Choisir des fichiers</label>
             </div>
 
             <button onclick="uploadFile()" class="bg-red-600 text-white px-6 py-3 rounded-full text-xl hover:bg-red-700 transition duration-300">Upload</button>
 
             <div id="upload-message" class="mt-6 hidden text-green-600">
-                <p>Document téléchargé avec succès !</p>
+                <p>Documents téléchargés avec succès !</p>
             </div>
         </div>
     </section>
 
     <script>
         function uploadFile() {
-            document.getElementById('upload-message').classList.remove('hidden');
+            const files = document.getElementById('file-upload').files;
+            if (files.length > 0) {
+                document.getElementById('upload-message').classList.remove('hidden');
+            } else {
+                alert('Veuillez sélectionner des fichiers avant de télécharger.');
+            }
         }
     </script>
 
