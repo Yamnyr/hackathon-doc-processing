@@ -10,7 +10,6 @@ Objectif : développer une **plateforme capable d’analyser automatiquement des
 * alimenter des outils métiers (CRM / conformité)
 
 ---
-
 # 🚀 Fonctionnalités principales
 
 ### 1️ Upload multi-documents
