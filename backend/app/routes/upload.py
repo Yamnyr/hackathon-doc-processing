@@ -1,171 +1,144 @@
 import re
-
-from fastapi import APIRouter, UploadFile, File
 import os
 import json
+from fastapi import APIRouter, UploadFile, File
 
 from backend.app.pipeline.ocr import extract_text
 from backend.app.pipeline.extractor import extract_information
 from backend.app.pipeline.classifier import classify_document
 from backend.app.pipeline.validator import validate_document, check_inconsistencies
 
+from backend.app.services.datalake import (
+    generate_batch_id,
+    generate_document_id,
+    save_to_raw,
+    save_to_clean,
+    save_to_curated,
+    create_document_entry,
+    save_batch_anomalies
+)
+
 router = APIRouter()
-init_datalake()
-
-
-def _extract_text(file_path: str) -> str:
-    """
-    Extract raw text from a file.
-    - PDF        → pdfplumber (text layer, no OCR needed)
-    - Image/WebP → Pillow converts to numpy array → pytesseract OCR
-    """
-    ext = file_path.rsplit(".", 1)[-1].lower()
-
-    if ext == "pdf":
-        import pdfplumber
-        text = ""
-        with pdfplumber.open(file_path) as pdf:
-            for page in pdf.pages:
-                text += (page.extract_text() or "") + "\n"
-        return text.strip()
-
-    # Images: use Pillow to open any format (JPG, PNG, WEBP, TIFF, BMP …)
-    # then convert to a numpy array for pytesseract
-    try:
-        import numpy as np
-        import pytesseract
-        from PIL import Image
-        import cv2
-
-        # Hardcode Tesseract path so it works regardless of system PATH
-        pytesseract.pytesseract.tesseract_cmd = (
-            r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-        )
-
-        pil_img   = Image.open(file_path).convert("RGB")
-        img_array = np.array(pil_img)
-        gray      = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-        return pytesseract.image_to_string(gray)
-
-    except pytesseract.TesseractNotFoundError:
-        print("[WARN] Tesseract not found at C:\\Program Files\\Tesseract-OCR\\tesseract.exe")
-        return ""
-    except Exception as e:
-        print(f"[WARN] image OCR failed for {file_path}: {e}")
-        return ""
-
-
-_DOC_KEYWORDS = {"devis", "facture", "attestation", "invoice", "unknown"}
-
-
-RAW_DIR = "data/raw"
-CLEAN_DIR = "data/clean"
-CURATED_DIR = "data/curated"
-
-os.makedirs(RAW_DIR, exist_ok=True)
-os.makedirs(CLEAN_DIR, exist_ok=True)
-os.makedirs(CURATED_DIR, exist_ok=True)
-
 
 @router.post("/upload")
 async def upload_files(files: list[UploadFile] = File(...)):
     results = []
+    batch_id = generate_batch_id()
 
-    # ── BRONZE + SILVER ──────────────────────────────────────────────────────
+    # ── RAW + CLEAN + CURATED ────────────────────────────────────────────────
     for file in files:
         filename = file.filename
-        file_path = os.path.join(RAW_DIR, filename)
+        content  = await file.read()
+        doc_id   = generate_document_id()
 
-        with open(file_path, "wb") as f:
-            f.write(await file.read())
-
+        # 1. Save to RAW (Bronze)
+        raw_meta = save_to_raw(doc_id, filename, content, batch_id)
+        
+        # 2. Extract Document Type Early (for MongoDB entry)
+        # We need text for classification
         result = {
+            "document_id": doc_id,
             "filename": filename,
-            "raw_path": file_path,
-            "status": "uploaded",
-            "document_type": "not_processed",
+            "raw_path": raw_meta["file_path"],
+            "status": "raw",
+            "document_type": "unknown",
             "extracted_data": {},
-            "ocr_text_preview": "",
             "validation": {},
         }
 
         ext = os.path.splitext(filename)[1].lower()
 
-        if ext in [".jpg", ".jpeg", ".png", ".pdf"]:
+        if ext in [".jpg", ".jpeg", ".png", ".pdf", ".webp"]:
             try:
-                text = extract_text(file_path)
-
-                txt_filename = os.path.splitext(filename)[0] + ".txt"
-                txt_path = os.path.join(CLEAN_DIR, txt_filename)
-                with open(txt_path, "w", encoding="utf-8") as txt_file:
-                    txt_file.write(text)
-
+                # 3. OCR / Extraction -> CLEAN (Silver)
+                text = extract_text(raw_meta["file_path"])
                 doc_type = classify_document(text)
                 extracted_data = extract_information(text)
+                
+                # Update early MongoDB entry
+                create_document_entry(raw_meta, predicted_type=doc_type)
 
+                clean_paths = save_to_clean(
+                    doc_id, 
+                    batch_id, 
+                    ocr_text=text, 
+                    extracted_data=extracted_data
+                )
+
+                # 4. Validation -> CURATED (Gold)
                 temp_doc = {
+                    "document_id": doc_id,
                     "filename": filename,
                     "document_type": doc_type,
                     "extracted_data": extracted_data,
                     "text": text,
                 }
-
                 validation_result = validate_document(temp_doc)
 
-                json_filename = os.path.splitext(filename)[0] + ".json"
-                json_path = os.path.join(CURATED_DIR, json_filename)
+                curated_paths = save_to_curated(
+                    batch_id=batch_id,
+                    document_id=doc_id,
+                    validated_record=temp_doc,
+                    anomalies=validation_result.get("anomalies", [])
+                )
 
-                curated_payload = {
-                    "filename": filename,
+                result.update({
+                    "status": "curated",
                     "document_type": doc_type,
-                    "text": text,
                     "extracted_data": extracted_data,
-                    "validation": validation_result,
-                }
-
-                with open(json_path, "w", encoding="utf-8") as json_file:
-                    json.dump(curated_payload, json_file, ensure_ascii=False, indent=2)
-
-                result["status"] = "processed"
-                result["document_type"] = doc_type
-                result["extracted_data"] = extracted_data
-                result["ocr_text_preview"] = text[:500]
-                result["clean_path"] = txt_path
-                result["curated_path"] = json_path
-                result["validation"] = validation_result
+                    "ocr_text_preview": text[:200],
+                    "clean_path": clean_paths.get("clean_path"),
+                    "curated_path": curated_paths.get("curated_path"),
+                    "validation": validation_result
+                })
 
             except Exception as e:
                 result["status"] = f"processing_failed: {str(e)}"
         else:
-            result["status"] = "uploaded_only"
-            result["note"] = "Type de fichier non encore supporté."
+            create_document_entry(raw_meta)
+            result["status"] = "raw_only"
+            result["note"] = "File type not supported for full pipeline."
 
         results.append(result)
 
     # Validation inter-documents si plusieurs fichiers
     cross_document_alerts = []
-    if len(results) >= 2:
-        processed_docs = [
-            {
-                "filename": r["filename"],
+    
+    # Filter only successfully processed (curated) documents for cross-validation
+    processed_list = []
+    for r in results:
+        if r and r.get("status") == "curated":
+            processed_list.append({
+                "document_id": r.get("document_id"),
+                "filename": r.get("filename"),
                 "document_type": r.get("document_type"),
-                "extracted_data": r.get("extracted_data", {}),
-            }
-            for r in results
-            if r.get("status") == "processed"
-        ]
+                "extracted_data": r.get("extracted_data") or {},
+            })
 
-        for i in range(len(processed_docs)):
-            for j in range(i + 1, len(processed_docs)):
-                alerts = check_inconsistencies(processed_docs[i], processed_docs[j])
+    if len(processed_list) >= 2:
+        for i in range(len(processed_list)):
+            for j in range(i + 1, len(processed_list)):
+                doc1 = processed_list[i]
+                doc2 = processed_list[j]
+                
+                alerts = check_inconsistencies(doc1, doc2)
                 if alerts:
+                    # Persist as BATCH_INCONSISTENCY in MongoDB
+                    batch_anomalies = [{
+                        "message": alert,
+                        "document_ids": [doc1.get("document_id"), doc2.get("document_id")],
+                        "severity": "high"
+                    } for alert in alerts]
+                    save_batch_anomalies(batch_id, batch_anomalies)
+
                     cross_document_alerts.append({
-                        "doc1": processed_docs[i]["filename"],
-                        "doc2": processed_docs[j]["filename"],
+                        "doc1": doc1.get("filename"),
+                        "doc2": doc2.get("filename"),
                         "alerts": alerts
                     })
 
     return {
+        "batch_id": batch_id,
         "results": results,
         "cross_document_alerts": cross_document_alerts
     }

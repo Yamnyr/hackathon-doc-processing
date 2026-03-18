@@ -9,10 +9,24 @@ def _preprocess_image(img: np.ndarray) -> np.ndarray:
     if img is None:
         raise ValueError("Image vide ou illisible.")
 
+    # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    gray = cv2.GaussianBlur(gray, (3, 3), 0)
-    _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
-    return thresh
+    
+    # Denoising
+    denoised = cv2.fastNlMeansDenoising(gray, None, 10, 7, 21)
+    
+    # Adaptive Thresholding (better for photos with varying light)
+    # We use a large block size to handle local lighting variations
+    thresh = cv2.adaptiveThreshold(
+        denoised, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+        cv2.THRESH_BINARY, 21, 10
+    )
+    
+    # Optional: Morphological operations (dilation/erosion) to connect characters if needed
+    kernel = np.ones((1, 1), np.uint8)
+    processed = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+    
+    return processed
 
 
 def extract_text_from_image(image_path: str) -> str:

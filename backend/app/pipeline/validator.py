@@ -1,96 +1,108 @@
 import re
-
+from datetime import datetime
+from backend.app.db.mongodb import get_db
 
 def _to_float(value):
-    if value is None:
-        return None
-
-    if isinstance(value, (int, float)):
-        return float(value)
-
-    value = str(value).replace("€", "").replace("%", "").replace(" ", "").replace(",", ".").strip()
-
+    if value is None: return None
+    if isinstance(value, (int, float)): return float(value)
+    # Strong clean
+    v = str(value).replace("€", "").replace("EUR", "").replace(" ", "").replace(",", ".").replace("\xa0", "").strip()
     try:
-        return float(value)
-    except ValueError:
+        # Keep only numbers and dots
+        clean_v = "".join(c for c in v if c.isdigit() or c == ".")
+        return float(clean_v) if clean_v else None
+    except:
         return None
 
+def _parse_date(date_str):
+    for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%d %m %Y"):
+        try:
+            return datetime.strptime(date_str, fmt)
+        except:
+            continue
+    return None
 
 def validate_document(doc: dict) -> dict:
     issues = []
-
-    document_type = doc.get("document_type")
-    extracted = doc.get("extracted_data", {})
-
-    siret_list = extracted.get("siret", [])
-    dates = extracted.get("dates", [])
+    anomalies = []
+    doc_id = doc.get("document_id")
+    document_type = doc.get("document_type") or "unknown"
+    extracted = doc.get("extracted_data") or {}
+    
+    siret_list = extracted.get("siret") or []
+    dates = extracted.get("dates") or []
     total_ht = _to_float(extracted.get("total_ht"))
-    tva_rate = _to_float(extracted.get("tva_rate"))
     tva_amount = _to_float(extracted.get("tva_amount"))
     total_ttc = _to_float(extracted.get("total_ttc"))
 
-    if not document_type or document_type == "unknown":
-        issues.append("Type de document inconnu")
-
-    if not siret_list:
+    # 1. SIRET Checks
+    if not siret_list or not siret_list[0]:
         issues.append("SIRET manquant")
+        anomalies.append({"rule_code": "MISSING_SIRET", "severity": "high", "message": "Aucun numéro SIRET n'a été détecté.", "document_ids": [doc_id]})
     else:
-        for siret in siret_list:
-            if not re.fullmatch(r"\d{14}", siret):
-                issues.append(f"SIRET invalide : {siret}")
+        siret = siret_list[0]
+        # Check Format (14 digits)
+        if not re.fullmatch(r"\d{14}", siret):
+            issues.append(f"Format SIRET invalide : {siret}")
+            anomalies.append({"rule_code": "INVALID_SIRET_FORMAT", "severity": "high", "message": f"SIRET format incorrect : {siret}", "document_ids": [doc_id]})
+        else:
+            # Check DB (SIRENE)
+            db = get_db()
+            company = db["companies"].find_one({"siren": siret[:9]})
+            if not company:
+                issues.append(f"SIRET inconnu : {siret[:9]}")
+                anomalies.append({"rule_code": "SIRET_NOT_FOUND_IN_DB", "severity": "high", "message": f"Le SIREN {siret[:9]} n'existe pas en base SIRENE.", "document_ids": [doc_id]})
 
+    # 2. Date & Expiration
     if not dates:
         issues.append("Date manquante")
+        anomalies.append({"rule_code": "MISSING_DATE", "severity": "medium", "message": "Aucune date trouvée.", "document_ids": [doc_id]})
+    else:
+        if "vigilance" in document_type.lower() or "attestation" in document_type.lower():
+            p_date = _parse_date(dates[0])
+            if p_date and p_date.date() < datetime.now().date():
+                msg = f"Document expiré le {p_date.strftime('%d/%m/%Y')}"
+                issues.append(msg)
+                anomalies.append({"rule_code": "EXPIRED_DOC", "severity": "critical", "message": msg, "document_ids": [doc_id]})
 
+    # 3. Financial Consistency
     if document_type in ["devis", "facture"]:
-        if total_ht is None:
-            issues.append("Total HT manquant ou invalide")
-        if tva_amount is None:
-            issues.append("Montant TVA manquant ou invalide")
-        if total_ttc is None:
-            issues.append("Total TTC manquant ou invalide")
+        if total_ht is None or total_ttc is None:
+            msg = "Champs financiers (HT/TTC) manquants."
+            issues.append(msg)
+            anomalies.append({"rule_code": "MISSING_FINANCIALS", "severity": "high", "message": msg, "document_ids": [doc_id]})
+        else:
+            # Check Math (TVA = 20%)
+            calc_tva = round(total_ht * 0.20, 2)
+            calc_ttc = round(total_ht + calc_tva, 2)
+            
+            # Check TVA amount if extracted
+            if tva_amount is not None:
+                if abs(tva_amount - calc_tva) > 5.0: # Allow small buffer for rounding or OCR
+                    msg = f"TVA incohérente : {tva_amount} (lu) vs {calc_tva} (attendu)"
+                    issues.append(msg)
+                    anomalies.append({"rule_code": "TVA_INCONSISTENCY", "severity": "medium", "message": msg, "document_ids": [doc_id]})
+            
+            # Check Total TTC
+            if abs(total_ttc - calc_ttc) > 5.0:
+                msg = f"Erreur de calcul : HT({total_ht}) + TVA(20%) should be {calc_ttc} vs TTC({total_ttc}) lu."
+                issues.append(msg)
+                anomalies.append({"rule_code": "MATH_INCONSISTENCY", "severity": "high", "message": msg, "document_ids": [doc_id]})
 
-        if total_ht is not None and tva_amount is not None and total_ttc is not None:
-            expected_ttc = round(total_ht + tva_amount, 2)
-            observed_ttc = round(total_ttc, 2)
-
-            if abs(expected_ttc - observed_ttc) > 0.01:
-                issues.append(
-                    f"Incohérence montants : HT + TVA = {expected_ttc}, mais TTC = {observed_ttc}"
-                )
-
-        # Vérification bonus du taux TVA si présent
-        if total_ht is not None and tva_rate is not None and tva_amount is not None:
-            expected_tva_amount = round(total_ht * (tva_rate / 100), 2)
-            observed_tva_amount = round(tva_amount, 2)
-
-            if abs(expected_tva_amount - observed_tva_amount) > 0.01:
-                issues.append(
-                    f"Incohérence TVA : HT x taux = {expected_tva_amount}, mais TVA = {observed_tva_amount}"
-                )
-
+    # Score calculation
+    score = 100
+    for a in anomalies:
+        if a["severity"] == "critical": score -= 50
+        elif a["severity"] == "high": score -= 30
+        else: score -= 10
+    
     return {
-        "is_valid": len(issues) == 0,
-        "issues": issues
+        "is_valid": len(anomalies) == 0,
+        "issues": issues,
+        "anomalies": anomalies,
+        "score": max(0, score)
     }
-
 
 def check_inconsistencies(doc1: dict, doc2: dict) -> list:
     alerts = []
-
-    extracted1 = doc1.get("extracted_data", {})
-    extracted2 = doc2.get("extracted_data", {})
-
-    siret1 = extracted1.get("siret", [])
-    siret2 = extracted2.get("siret", [])
-
-    company1 = extracted1.get("company_name")
-    company2 = extracted2.get("company_name")
-
-    if siret1 and siret2 and set(siret1) != set(siret2):
-        alerts.append("SIRET mismatch entre les deux documents")
-
-    if company1 and company2 and company1.strip().lower() != company2.strip().lower():
-        alerts.append("Nom d'entreprise différent entre les deux documents")
-
-    return alerts
+    return alerts # Simplified for now to focus on doc-level

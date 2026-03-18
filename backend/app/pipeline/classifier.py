@@ -1,5 +1,8 @@
 def classify_document(text: str) -> str:
     text = text.lower()
+    
+    # Pre-clean for header check (handles "FACTU R E", "D E V I S")
+    text_clean = text.replace(" ", "")
 
     scores = {
         "facture": 0,
@@ -8,36 +11,34 @@ def classify_document(text: str) -> str:
         "rib": 0,
     }
 
-    # mots-clés pondérés
+    # weighted_keywords
     weighted_keywords = {
         "facture": {
             "facture": 5,
-            "net à payer": 3,
+            "net à payer": 4,
             "montant ttc": 2,
-            "total ttc": 1,
-            "tva": 1,
+            "fac-": 3,
+            "tva (20%)": 1,
         },
         "devis": {
             "devis": 5,
-            "ref: dev": 3,
-            "ref : dev": 3,
-            "n° : dev": 3,
-            "validité": 2,
-            "total ht": 1,
-            "total ttc": 1,
-            "tva": 1,
+            "proposition": 2,
+            "validité": 3,
+            "ref: dev": 4,
+            "n° : dev": 4,
         },
         "attestation": {
-            "attestation": 5,
-            "urssaf": 3,
-            "vigilance": 3,
+            "attestation": 6,
+            "urssaf": 5,
+            "vigilance": 5,
             "certifie": 2,
+            "déclare": 2,
         },
         "rib": {
             "iban": 5,
             "bic": 4,
             "rib": 4,
-            "relevé d'identité bancaire": 5,
+            "compte bancaire": 3,
         },
     }
 
@@ -46,13 +47,16 @@ def classify_document(text: str) -> str:
             if word in text:
                 scores[doc_type] += weight
 
-    # priorité forte si le titre du document est visible
-    if "devis" in text[:300]:
-        scores["devis"] += 10
-    if "facture" in text[:300]:
-        scores["facture"] += 10
-    if "attestation" in text[:300]:
-        scores["attestation"] += 10
+    # Priority Title Check (Header)
+    # Using text_clean to catch "F A C T U R E" or "FACTU R E"
+    if "facture" in text_clean[:200]:
+        scores["facture"] += 15
+    if "devis" in text_clean[:200]:
+        scores["devis"] += 15
+    if "attestation" in text_clean[:200] or "vigilance" in text_clean[:200]:
+        scores["attestation"] += 15
+    if "relevéd'identitébancaire" in text_clean[:200]:
+        scores["rib"] += 15
 
     best_type = max(scores, key=scores.get)
 

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mongodb:
     image: mongo:latest
@@ -31,6 +29,7 @@ services:
       - "8501:8501"
     volumes:
       - ./frontend:/app/frontend
+      - ./data:/app/data
     environment:
       - BACKEND_URL=http://backend:8000
     depends_on:
