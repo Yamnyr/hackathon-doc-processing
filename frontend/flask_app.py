@@ -48,6 +48,11 @@ def rib():
 def ursaff():
      return render_template('ursaff.html')
 
+ # Route pour la page de test
+@app.route('/anomalie.html')
+def anomalie():
+     return render_template('anomalie.html')
+
 
 
 # Lancement de l'application Flask

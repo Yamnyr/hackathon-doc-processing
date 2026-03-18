@@ -83,11 +83,7 @@ with tabs[1]:
     else:
         st.warning(f"Directory {layer_dir} not found. (Current CWD: {os.getcwd()})")
 
-<<<<<<< HEAD
-# Lancement de l'application Flask
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)
-=======
+
 with tabs[2]:
     st.header("Validation Anomalies")
     anomalies = list(db.anomalies.find().sort("detected_at", -1))
@@ -184,4 +180,4 @@ st.sidebar.title("Hackathon Settings")
 st.sidebar.info("Medallion Architecture: Raw → Clean → Curated")
 if st.sidebar.button("Refresh Dashboard"):
     st.rerun()
->>>>>>> 78b582a7dcd9796f23441633e6ce5f912b5866ed
+
