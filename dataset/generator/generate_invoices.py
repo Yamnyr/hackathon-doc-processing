@@ -74,7 +74,8 @@ class DatasetGenerator:
             return {
                 "name": c.get("name", fake.company()),
                 "siren": c.get("siren", fake.siren()),
-                "address": c.get("address", fake.address())
+                "siret": c.get("siret", c.get("siren", fake.siren()) + "00012"),
+                "address": c.get("address", fake.address().replace("\n", ", "))
             }
         return {"name": fake.company(), "siren": fake.siren(), "address": fake.address()}
 
@@ -86,7 +87,8 @@ class DatasetGenerator:
 
     def generate_batch(self, batch_id, has_anomaly=False):
         company = self._get_company()
-        siret = f"{company['siren']}00012"
+        siret = company['siret']
+        print(f"Generating batch for: {company['name']} ({siret})")
         docs = ["FACTURE", "DEVIS", "VIGILANCE"]
         
         anomaly_type = "CLEAN"
@@ -110,7 +112,8 @@ class DatasetGenerator:
                 elif anomaly_type == "SIRET_DB_MISSING":
                     current_siret = "99988877700012" # Not in DB
 
-            prefix = f"batch_{batch_id}_{anomaly_type}_{doc_type.lower()}"
+            effective_label = anomaly_type if not (anomaly_type == "EXPIRED_DOC" and doc_type != "VIGILANCE") else "CLEAN"
+            prefix = f"batch_{batch_id}_{effective_label}_{doc_type.lower()}"
             
             self._create_pdf(os.path.join(self.output_dir, f"{prefix}.pdf"), doc_type, company, current_siret, current_date, ht, tva, ttc)
             self._create_photo(os.path.join(self.output_dir, f"{prefix}_photo.jpg"), doc_type, company, current_siret, current_date, ht, tva, ttc)

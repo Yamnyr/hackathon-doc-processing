@@ -1,12 +1,16 @@
 import csv
 import os
+import random
 from pymongo import MongoClient
+from faker import Faker
 
 # Configuration
 CSV_PATH = "dataset/StockUniteLegale_utf8.csv"
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/hackathon")
 DB_NAME = "hackathon"
 COLLECTION_NAME = "companies"
+
+fake = Faker("fr_FR")
 
 def import_20_companies():
     print(f"Reading {CSV_PATH}...")
@@ -41,7 +45,9 @@ def import_20_companies():
                 if etat == 'A' and name:
                     companies.append({
                         "siren": row.get('siren'),
+                        "siret": row.get('siren') + str(random.randint(10000, 99999)), # SIRET = SIREN + 5 digits NIC
                         "name": name,
+                        "address": fake.address().replace("\n", ", "),
                         "sigle": row.get('sigleUniteLegale'),
                         "date_creation": row.get('dateCreationUniteLegale'),
                         "categorie": row.get('categorieJuridiqueUniteLegale'),

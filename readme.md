@@ -69,7 +69,7 @@ hackathon-doc-processing/
 Le projet utilise Docker pour orchestrer le backend, le frontend et la base de données MongoDB.
 
 ```bash
-docker-compose up --build
+docker-compose up --build -d
 ```
 
 ## 2️ Installation Manuelle
@@ -91,19 +91,24 @@ source venv/bin/activate  # (ou venv\Scripts\activate sur Windows)
 # Installation
 pip install -r requirements.txt
 ```
-### Initialisation du Dataset
 Pour générer les données à partir de la base SIRENE (nécessite le fichier `StockUniteLegale_utf8.csv` à la racine) :
 
-```bash
-# 1. Lancer MongoDB
-docker-compose up -d mongodb
+```powershell
+# 1. Lancer les services Docker
+docker-compose up -d
 
-# 2. Importer les entreprises de la base SIRENE
+# 2. Configurer l'accès à MongoDB (Docker utilise le port 27027 pour l'hôte)
+$env:MONGO_URI = "mongodb://localhost:27027/hackathon"
+
+# 3. Importer les entreprises de la base SIRENE (avec SIRET + Adresses)
 python dataset/generator/import_companies.py
 
-# 3. Générer le dataset (PDF/JPG)
+# 4. Générer le dataset d'Invoices / Devis / Vigilance (PDF/JPG)
 python dataset/generator/generate_invoices.py
 ```
+
+> [!NOTE]
+> Le port **27027** est utilisé pour permettre à votre machine (Hôte) de communiquer avec le MongoDB qui tourne dans Docker sans entrer en conflit avec un éventuel MongoDB local (port 27017).
 
 ### Lancement des services
 

@@ -8,16 +8,22 @@ def _to_float(value):
     # Strong clean
     v = str(value).replace("€", "").replace("EUR", "").replace(" ", "").replace(",", ".").replace("\xa0", "").strip()
     try:
-        # Keep only numbers and dots
-        clean_v = "".join(c for c in v if c.isdigit() or c == ".")
-        return float(clean_v) if clean_v else None
+        # If there are multiple groups of numbers (e.g. Rate + Amount), take the last one
+        matches = re.findall(r"\d+\.\d+|\d+", v)
+        if matches:
+            return float(matches[-1])
+        return None
     except:
         return None
 
 def _parse_date(date_str):
-    for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%d %m %Y"):
+    if not date_str: return None
+    # Normalize: remove spaces and normalize separators
+    d = date_str.replace(" ", "").replace(".", "/").replace("-", "/")
+    # Try common formats
+    for fmt in ("%d/%m/%Y", "%m/%d/%Y"):
         try:
-            return datetime.strptime(date_str, fmt)
+            return datetime.strptime(d, fmt)
         except:
             continue
     return None

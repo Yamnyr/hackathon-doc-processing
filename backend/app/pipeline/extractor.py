@@ -33,16 +33,25 @@ def extract_information(text: str) -> dict:
     if siret:
         siret = re.sub(r"\D", "", siret)
     else:
-        # Global search for 14 digits
-        matches = re.findall(r"\b\d{14}\b", cleaned_text)
-        siret = matches[0] if matches else None
+        # Global search: allow internal spaces
+        matches = re.findall(r"\b(?:\d\s*){14}\b", cleaned_text)
+        if matches:
+            siret = re.sub(r"\s", "", matches[0])
+        else:
+            siret = None
 
     # Date
     date_val = get_val("DATE", cleaned_text)
-    if not date_val:
-        # Global search
-        matches = re.findall(r"\b\d{1,2}[/\-\s]\d{1,2}[/\-\s]\d{4}\b", cleaned_text)
-        date_val = matches[0] if matches else None
+    if date_val:
+        # Clean internal spaces that OCR might add (e.g. 03/1 1/2024)
+        date_val = re.sub(r"(\d)\s+(\d)", r"\1\2", date_val)
+    else:
+        # Global search: allow some internal spaces in components
+        matches = re.findall(r"\b\d{1,2}[\s/.\-]+\d{1,2}[\s/.\-]+\d{4}\b", cleaned_text)
+        if matches:
+            date_val = re.sub(r"\s+", " ", matches[0]).strip()
+        else:
+            date_val = None
 
     # Company Name
     company = get_val("COMPANY", cleaned_text)
@@ -50,6 +59,9 @@ def extract_information(text: str) -> dict:
     # Financials (Very strict labels to avoid confusion)
     total_ht_str = get_val("TOTAL HT", cleaned_text)
     tva_amount_str = get_val("TVA", cleaned_text)
+    if tva_amount_str:
+        # Strip percentage patterns like (20%) or 20% to avoid joining them into the amount
+        tva_amount_str = re.sub(r"\(?\d+\s*%\)?", "", tva_amount_str).strip()
     total_ttc_str = get_val("TOTAL TTC", cleaned_text)
 
     # 3. Global Fallback for amounts if labels missed
