@@ -1,138 +1,90 @@
-# Hackathon – Traitement automatique de documents administratifs
+# ScanDocs AI — Système de Détection de Fraude Documentaire
 
-Projet réalisé dans le cadre du hackathon IPSSI.
-
-Objectif : développer une **plateforme capable d’analyser automatiquement des documents administratifs** (factures, devis, attestations…) afin de :
-
-* classifier les documents
-* extraire les informations clés
-* détecter des incohérences ou fraudes
-* alimenter des outils métiers (CRM / conformité)
-
----
-# 🚀 Fonctionnalités principales
-
-### 1️ Upload multi-documents
-Interface permettant de charger plusieurs documents administratifs.
-
-### 2️ Classification automatique
-Détection automatique du type de document :
-* Factures
-* Devis
-* Attestations SIRET / KBIS / Vigilance URSSAF
-* RIB
-
-### 3️ OCR & Extraction d'informations
-* Extraction du texte à partir des documents PDF ou images.
-* Extraction de données structurées : SIREN, SIRET, montants, dates, noms d'entreprises.
-
-### 4️ Génération de Dataset Synthétique & Réel
-* **Données réelles** : Intégration de la base SIRENE (INSEE) avec 20 entreprises stockées en MongoDB.
-* **Templates Pro** : Génération de documents réalistes (PDF) avec calculs de TVA, en-têtes officiels et pieds de page.
-* **Robustesse** : Simulation de scans bruités (rotation, flou, bruit numérique) et insertion d'erreurs métier (calculs faux, SIRET invalides) pour tester la détection de fraude.
-
-### 5️ Data Lake (Architecture Medallion)
-* **Bronze** : Documents bruts.
-* **Silver** : Texte extrait par OCR.
-* **Gold** : Données structurées prêtes pour l'analyse.
+**ScanDocs AI** est une solution complète d'automatisation et de sécurisation du traitement des documents administratifs (factures, devis, attestations). Le projet combine OCR haute performance, analyse de données et moteur de règles métier pour détecter instantanément les fraudes et les erreurs de conformité.
 
 ---
 
-# 🏗️ Architecture Technique
+## Présentation du Projet
 
-### Pipeline Global
-1. **Source** : Upload client ou Dataset généré via `StockUniteLegale_utf8.csv`.
-2. **Stockage** : Persistence des documents et données métiers dans **MongoDB**.
-3. **Traitement** : Pipeline OCR (Tesseract) → Extraction (NLP/Regex) → Validation.
-4. **Dashboard** : Visualisation des alertes et données exploitables.
+Dans un contexte de digitalisation croissante, la falsification de documents administratifs est un risque majeur. **ScanDocs AI** répond à ce défi en proposant un pipeline de traitement intelligent qui transforme des images ou PDFs bruts en données certifiées.
 
-### Structure des dossiers
-```
-hackathon-doc-processing/
-├── backend/                # FastAPI / Logique métier
-├── frontend/               # Streamlit Dashboard
-├── data/                   # Data Lake (Bronze/Silver/Gold)
-├── dataset/
-│   └── generator/          # Scripts de génération de documents
-│       ├── generate_invoices.py
-│       ├── import_companies.py
-│       └── generated/      # Fichiers PDF/JPG produits
-├── docker-compose.yml      # Orchestration (Backend, Mongo, Frontend)
-└── requirements.txt        # Dépendances Python
-```
+### Objectifs Clés :
+*   **Automatisation** : Suppression de la saisie manuelle via un OCR multi-langues.
+*   **Sécurisation** : Détection automatique des incohérences financières et administratives.
+*   **Conformité (KYC/KYB)** : Vérification systématique des SIRET et des périodes de validité.
+*   **Gouvernance** : Traçabilité complète des données via une architecture Medallion (Raw → Clean → Curated).
 
 ---
 
-# 🛠️ Installation & Démarrage
+## Architecture du Système
 
-## 1️ Via Docker (Recommandé)
-Le projet utilise Docker pour orchestrer le backend, le frontend et la base de données MongoDB.
+Le projet repose sur une architecture robuste et scalable, orchestrée par **Docker**.
 
+### 1. Pipeline de Données (Medallion)
+Le flux de données est segmenté en trois zones distinctes dans le Data Lake (MongoDB) :
+*   **Zone Bronze (Raw)** : Stockage des documents originaux (PDF/JPG) sans modification.
+*   **Zone Silver (Clean)** : Données extraites par l'OCR, nettoyées et structurées au format JSON.
+*   **Zone Gold (Curated)** : Données validées par le moteur de règles, prêtes pour l'exploitation métier.
+
+### 2. Moteur de Détection d'Anomalies
+Notre système identifie 6 types de fraudes/erreurs critiques :
+*   **MATH_ERROR** : Incohérence arithmétique (`HT + TVA != TTC`).
+*   **TVA_WRONG** : Taux de TVA incorrect ou mal calculé.
+*   **SIRET_MISSING/INVALID** : SIRET absent ou format incorrect.
+*   **SIRET_DB_MISSING** : Entreprise inconnue dans la base SIRENE (données réelles).
+*   **EXPIRED_DATE** : Document datant de plus d'un an (périmé).
+*   **EXPIRED_ATTESTATION** : Attestation de vigilance dont la date de validité est dépassée.
+
+---
+
+## Stack Technique
+
+*   **Langage** : Python 3.11 (Cœur du traitement)
+*   **Traitement d'Image** : OpenCV, Pillow (Prétraitement & Robustesse)
+*   **OCR** : Tesseract (Moteur de reconnaissance de caractères)
+*   **Base de Données** : MongoDB (NoSQL pour la flexibilité des documents)
+*   **Frontend Duo** : 
+    *   **Flask (TailwindCSS)** : Interface métier fluide pour la gestion quotidienne.
+    *   **Streamlit** : Dashboard analytique pour le suivi des KPIs de risque.
+*   **Infrastructure** : Docker & Docker-Compose.
+
+---
+
+## Démarrage Rapide
+
+### 1. Lancer l'infrastructure complète
+Assurez-vous d'avoir Docker installé, puis lancez le projet à la racine :
 ```bash
 docker-compose up --build -d
 ```
+Les services seront accessibles aux adresses suivantes :
+*   **App Métier (Flask)** : `http://localhost:5000`
+*   **Dashboard Analytics (Streamlit)** : `http://localhost:8501`
+*   **API Backend** : `http://localhost:8000`
 
-## 2️ Installation Manuelle
-
-### Dépendances Système
-* **Tesseract OCR** : Doit être installé sur votre machine.
-
-### Environnement Python
-Avec conda :
-```bash
-conda create -n hackathon python=3.10
-conda activate hackathon
-```
-ou avec venv :
-```bash
-source venv/bin/activate  # (ou venv\Scripts\activate sur Windows)
-```
-```bash
-# Installation
-pip install -r requirements.txt
-```
-Pour générer les données à partir de la base SIRENE (nécessite le fichier `StockUniteLegale_utf8.csv` à la racine) :
+### 2. Générer le Dataset de test (Optionnel)
+Pour tester le système avec des documents réalistes contenant des anomalies injectées :
 
 ```powershell
-# 1. Lancer les services Docker
-docker-compose up -d
-
-# 2. Configurer l'accès à MongoDB (Docker utilise le port 27027 pour l'hôte)
+# 1. Configurer l'accès à la base de données (Docker port 27027)
 $env:MONGO_URI = "mongodb://localhost:27027/hackathon"
 
-# 3. Importer les entreprises de la base SIRENE (avec SIRET + Adresses)
+# 2. Importer les entreprises de la base SIRENE réelle
 python dataset/generator/import_companies.py
 
-# 4. Générer le dataset d'Invoices / Devis / Vigilance (PDF/JPG)
+# 3. Générer 130+ documents (Factures, Devis, KBIS...) avec anomalies
 python dataset/generator/generate_invoices.py
 ```
-
-> [!NOTE]
-> Le port **27027** est utilisé pour permettre à votre machine (Hôte) de communiquer avec le MongoDB qui tourne dans Docker sans entrer en conflit avec un éventuel MongoDB local (port 27017).
-
-### Lancement des services
-
-Lancer le backend (FastAPI) :
-```bash
-uvicorn backend.app.main:app --reload
-```
-
-Lancer le frontend (Streamlit) :
-```bash
-streamlit run frontend/app.py
-```
+*Les documents seront générés dans `dataset/generator/generated/` et pourront être uploadés via l'interface.*
 
 ---
 
-# 🧠 Technologies utilisées
+## Fonctionnalités Avancées
 
-* **Backend** : FastAPI, Python, MongoDB
-* **OCR** : Tesseract, OpenCV, Pillow, ReportLab (Génération PDF)
-* **Data** : Faker (Données synthétiques), Base SIRENE (Données réelles)
-* **Frontend** : Streamlit
-* **DevOps** : Docker, Docker-Compose
+*   **Réalisme des documents** : Le générateur applique des effets de photo (grain, bruit, rotation légère) pour simuler des conditions réelles d'utilisation par smartphone.
+*   **Extraction de précision** : Utilisation de Regex contextuelles pour capturer les montants même dans des mises en page complexes (CAS A/B).
+*   **Centre d'Alertes** : Interface dédiée listant chaque anomalie avec sa cause précise et son niveau de sévérité.
 
 ---
 
-# 🎯 Objectif Final
-Fournir une solution de bout en bout pour automatiser les contrôles de conformité KYC/KYB en détectant instantanément les documents falsifiés ou les erreurs de saisie administrative.
+*Projet réalisé par l'équipe IPSSI dans le cadre du Hackathon IA & Data.*
