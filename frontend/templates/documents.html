@@ -106,10 +106,17 @@
                                 Conforme
                             </span>
                             {% else %}
-                            <a href="{{ url_for('anomalie') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-red-50 text-red-700 border border-red-100 hover:bg-red-100 transition-all italic">
-                                <span class="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shadow-sm shadow-red-200"></span>
-                                Anomalie
-                            </a>
+                            <div class="flex flex-col gap-2 items-center">
+                                <a href="{{ url_for('anomalie') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-red-50 text-red-700 border border-red-100 hover:bg-red-100 transition-all italic">
+                                    <span class="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shadow-sm shadow-red-200"></span>
+                                    Anomalie
+                                </a>
+                                {% if doc.anomaly_causes %}
+                                <div class="text-[9px] font-bold text-red-400 max-w-[150px] leading-tight text-center">
+                                    {{ doc.anomaly_causes | join(' | ') }}
+                                </div>
+                                {% endif %}
+                            </div>
                             {% endif %}
                         </td>
                         <td class="px-8 py-6 text-right">

@@ -85,13 +85,14 @@ def documents():
         if company_filter and company_filter.lower() not in str(company or '').lower(): continue
         
         # Anomaly status check
-        doc_anomalies = db.anomalies.count_documents({"document_ids": doc_id})
+        doc_anomalies = list(db.anomalies.find({"document_ids": doc_id}))
         
         # Prepare for template
         doc['siret'] = siret or "Non détecté"
         doc['company_name'] = company or "Inconnu"
         # A doc is valid only if status is curated AND it has no anomalies
-        doc['is_valid'] = (doc['status'] == 'curated' and doc_anomalies == 0)
+        doc['is_valid'] = (doc['status'] == 'curated' and len(doc_anomalies) == 0)
+        doc['anomaly_causes'] = [a.get('message', 'Anomalie détectée') for a in doc_anomalies]
         enriched_docs.append(doc)
         
     print(f"DEBUG: Sending {len(enriched_docs)} docs to template")
@@ -145,8 +146,9 @@ def company_documents(siren):
         
         doc['siret'] = siret or "Non détecté"
         doc['company_name'] = company_info.get('nom', 'Inconnu')
-        doc_anomalies = db.anomalies.count_documents({"document_ids": doc_id})
-        doc['is_valid'] = (doc['status'] == 'curated' and doc_anomalies == 0)
+        doc_anomalies = list(db.anomalies.find({"document_ids": doc_id}))
+        doc['is_valid'] = (doc['status'] == 'curated' and len(doc_anomalies) == 0)
+        doc['anomaly_causes'] = [a.get('message', 'Anomalie détectée') for a in doc_anomalies]
         enriched_docs.append(doc)
 
     return render_template('company_details.html', company=company_info, documents=enriched_docs)
