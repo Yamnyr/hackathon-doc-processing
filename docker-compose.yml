@@ -35,5 +35,20 @@ services:
     depends_on:
       - backend
 
+  frontend-flask:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./frontend:/app/frontend
+      - ./data:/app/data
+    environment:
+      - BACKEND_URL=http://backend:8000
+    command: python frontend/flask_app.py
+    depends_on:
+      - backend
+
 volumes:
   mongo_data:

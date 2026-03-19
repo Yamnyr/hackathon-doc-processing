@@ -12,3 +12,4 @@ requests
 faker
 reportlab
 pymongo
+flask

@@ -112,11 +112,18 @@ class DatasetGenerator:
                 elif anomaly_type == "SIRET_DB_MISSING":
                     current_siret = "99988877700012" # Not in DB
 
-            effective_label = anomaly_type if not (anomaly_type == "EXPIRED_DOC" and doc_type != "VIGILANCE") else "CLEAN"
-            prefix = f"batch_{batch_id}_{effective_label}_{doc_type.lower()}"
+            # Determine if the anomaly is applicable to this specific doc_type
+            is_applicable = True
+            if anomaly_type == "MATH_ERROR" and doc_type not in ["FACTURE", "DEVIS"]:
+                is_applicable = False
+            elif anomaly_type == "EXPIRED_DOC" and doc_type != "VIGILANCE":
+                is_applicable = False
+                
+            effective_label = anomaly_type if (has_anomaly and is_applicable) else "CLEAN"
+            full_name = f"doc_{effective_label}_{doc_type.lower()}_{batch_id}_{uuid.uuid4().hex[:4]}"
             
-            self._create_pdf(os.path.join(self.output_dir, f"{prefix}.pdf"), doc_type, company, current_siret, current_date, ht, tva, ttc)
-            self._create_photo(os.path.join(self.output_dir, f"{prefix}_photo.jpg"), doc_type, company, current_siret, current_date, ht, tva, ttc)
+            self._create_pdf(os.path.join(self.output_dir, f"{full_name}.pdf"), doc_type, company, current_siret, current_date, ht, tva, ttc)
+            self._create_photo(os.path.join(self.output_dir, f"{full_name}_photo.jpg"), doc_type, company, current_siret, current_date, ht, tva, ttc)
 
     def _create_pdf(self, path, doc_type, company, siret, date, ht, tva, ttc):
         c = canvas.Canvas(path, pagesize=A4)

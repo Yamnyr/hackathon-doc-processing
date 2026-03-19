@@ -12,21 +12,12 @@ def _preprocess_image(img: np.ndarray) -> np.ndarray:
     # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
-    # Denoising
-    denoised = cv2.fastNlMeansDenoising(gray, None, 10, 7, 21)
+    # Check if we should threshold - for very clean docs, adaptive thresholding can be harmful
+    # If the variance is low (mostly white/black), maybe just use binary
+    # For now, let's just use simple thresholding if it looks high contrast
+    _, thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     
-    # Adaptive Thresholding (better for photos with varying light)
-    # We use a large block size to handle local lighting variations
-    thresh = cv2.adaptiveThreshold(
-        denoised, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-        cv2.THRESH_BINARY, 21, 10
-    )
-    
-    # Optional: Morphological operations (dilation/erosion) to connect characters if needed
-    kernel = np.ones((1, 1), np.uint8)
-    processed = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
-    
-    return processed
+    return thresh
 
 
 def extract_text_from_image(image_path: str) -> str:
@@ -35,8 +26,15 @@ def extract_text_from_image(image_path: str) -> str:
     if img is None:
         raise ValueError(f"Impossible de lire le fichier image : {image_path}")
 
+    # Try raw first if it's very clean, or just use the processed one
     processed = _preprocess_image(img)
-    text = pytesseract.image_to_string(processed)
+    text = pytesseract.image_to_string(processed, lang="fra+eng")
+    
+    # If empty, try without preprocessing
+    if not text.strip():
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        text = pytesseract.image_to_string(gray, lang="fra+eng")
+        
     return text.strip()
 
 
@@ -49,12 +47,19 @@ def extract_text_from_pdf(pdf_path: str) -> str:
 
     for i in range(len(pdf)):
         page = pdf[i]
-        bitmap = page.render(scale=2)
+        # Increase scale to 3 for higher DPI (approx 216 DPI)
+        bitmap = page.render(scale=3)
         pil_image = bitmap.to_pil()
         img = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
 
+        # Same strategy: try processed then raw
         processed = _preprocess_image(img)
-        page_text = pytesseract.image_to_string(processed)
+        page_text = pytesseract.image_to_string(processed, lang="fra+eng")
+        
+        if not page_text.strip():
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            page_text = pytesseract.image_to_string(gray, lang="fra+eng")
+            
         all_text.append(page_text.strip())
 
     return "\n".join(all_text).strip()
