@@ -30,7 +30,7 @@
                     <div class="flex flex-wrap items-center gap-3 mb-4">
                         <span class="px-3 py-1 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg">{{ a.rule_code }}</span>
                         <span class="px-3 py-1 {% if a.severity == 'critical' %}bg-red-50 text-red-700{% elif a.severity == 'high' %}bg-orange-50 text-orange-700{% else %}bg-yellow-50 text-yellow-700{% endif %} text-[10px] font-black uppercase tracking-widest rounded-lg italic">
-                            {{ a.severity }} severity
+                            Sévérité : {{ a.severity }}
                         </span>
                         <span class="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{{ a.detected_at[:16] }}</span>
                     </div>

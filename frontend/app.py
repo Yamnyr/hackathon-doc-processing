@@ -9,175 +9,175 @@ from pymongo import MongoClient
 BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8000")
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongodb:27017/hackathon")
 
-st.set_page_config(
-    page_title="Document Processing Analytics",
-    page_icon="📄",
-    layout="wide",
-)
 
 # --- DB HELPERS ---
 @st.cache_resource
 def get_db():
-    client = MongoClient(MONGO_URI)
-    return client.hackathon
+    try:
+        uri = os.getenv("MONGO_URI", "mongodb://mongodb:27017/hackathon")
+        # Check if we are running locally instead of Docker
+        if "localhost" not in uri and os.getenv("IS_LOCAL_DEBUG", "false") == "true":
+             uri = "mongodb://localhost:27027/hackathon"
+        client = MongoClient(uri, serverSelectionTimeoutMS=2000)
+        return client.hackathon
+    except:
+        return None
 
 db = get_db()
+if db is None:
+    st.error("⚠️ Connexion à MongoDB échouée. Vérifiez votre configuration.")
+    st.stop()
 
 # --- APP ---
-st.title("🚀 Document Processing Dashboard")
+st.title("🛡️ Dashboard de Fraude & Conformité")
+st.markdown("Système de vérification automatisée de documents")
 st.markdown("---")
 
-tabs = st.tabs(["📊 Overview", "📁 Data Lake Explorer", "🛡️ Validation & Fraud", "📤 Upload Test"])
+tabs = st.tabs(["📊 Vue d'ensemble", "🔍 Validation & Anomalies", "📂 Explorateur de Données", "📤 Batch Upload"])
 
 with tabs[0]:
-    st.header("System Snapshot")
-    col1, col2, col3, col4 = st.columns(4)
-
-    # Stats from MongoDB
+    st.header("État du Système")
+    
     try:
         total_docs = db.documents.count_documents({})
-        raw_count = db.documents.count_documents({"status": "raw"})
-        clean_count = db.documents.count_documents({"status": "clean"})
-        curated_count = db.documents.count_documents({"status": "curated"})
         anomalies_count = db.anomalies.count_documents({})
-
-        col1.metric("Total Documents", total_docs)
-        col2.metric("Raw (Bronze)", raw_count)
-        col3.metric("Clean (Silver)", clean_count)
-        col4.metric("Curated (Gold)", curated_count)
-
-        st.subheader("Document Types Distribution")
-        docs_list = list(db.documents.find({}, {"predicted_type": 1, "_id": 0}))
-        if docs_list:
-            df_types = pd.DataFrame(docs_list)
-            st.bar_chart(df_types['predicted_type'].value_counts())
-        else:
-            st.info("No documents yet.")
+        valid_count = total_docs - anomalies_count
+        anomaly_rate = (anomalies_count / total_docs * 100) if total_docs > 0 else 0
+        
+        kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+        kpi1.metric("Documents Traités", total_docs)
+        kpi2.metric("Documents Valides", valid_count)
+        kpi3.metric("Anomalies Détectées", anomalies_count, delta=f"{anomaly_rate:.1f}% Risque", delta_color="inverse")
+        kpi4.metric("En attente (Raw)", db.documents.count_documents({"status": "raw"}))
+        
+        st.markdown("---")
+        
+        col_left, col_right = st.columns(2)
+        
+        with col_left:
+            st.subheader("⚠️ Types d'Anomalies")
+            anomalies_list = list(db.anomalies.find({}, {"rule_code": 1, "_id": 0}))
+            if anomalies_list:
+                df_fraud = pd.DataFrame(anomalies_list)
+                if 'rule_code' in df_fraud.columns:
+                    counts = df_fraud['rule_code'].value_counts()
+                    st.bar_chart(counts, color="#FF4B4B")
+                else:
+                    st.info("Attente de données de validation...")
+            else:
+                st.info("Aucune anomalie détectée pour le moment.")
+                
+        with col_right:
+            st.subheader("📄 Répartition par Type")
+            docs_list = list(db.documents.find({}, {"predicted_type": 1, "_id": 0}))
+            if docs_list:
+                df_types = pd.DataFrame(docs_list)
+                # Fix: Using 'predicted_type' consistently
+                if 'predicted_type' in df_types.columns:
+                    st.bar_chart(df_types['predicted_type'].value_counts(), color="#4B8BFF")
+                else:
+                    st.info("Attente de classification...")
+            else:
+                st.info("Aucun document analysé.")
 
     except Exception as e:
-        st.error(f"Could not connect to database: {e}")
+        st.error(f"Erreur lors de la récupération des stats: {e}")
 
 with tabs[1]:
-    st.header("Data Lake Browsing")
-    layer = st.selectbox("Select Layer", ["Raw", "Clean", "Curated"])
+    st.header("🛡️ Centre de Contrôle des Fraudes")
+    st.write("Analyse détaillée des problèmes de conformité détectés.")
+    
+    anomalies = list(db.anomalies.find().sort("detected_at", -1))
+    
+    if anomalies:
+        for idx, a in enumerate(anomalies):
+            with st.container(border=True):
+                c1, c2, c3 = st.columns([1, 4, 1])
+                sev = a.get("severity", "medium").upper()
+                emoji = "🔴" if sev == "HIGH" else "🟠" if sev == "MEDIUM" else "🟡"
+                
+                c1.markdown(f"### {emoji}\n**{sev}**")
+                
+                doc_ids = a.get("document_ids", [])
+                filenames = []
+                if doc_ids:
+                    docs = list(db.documents.find({"document_id": {"$in": doc_ids}}, {"filename": 1}))
+                    filenames = [d["filename"] for d in docs]
+                
+                c2.markdown(f"**Cause : {a.get('message', 'Non spécifiée')}**")
+                c2.caption(f"Règle : `{a.get('rule_code')}` | Date : {a.get('detected_at')}")
+                if filenames:
+                    c2.markdown(f"*Fichiers : {', '.join(filenames)}*")
+                
+                if c3.button("Détails", key=f"det_{idx}"):
+                    st.info(f"Information complémentaire : {a.get('message')}")
+                    
+    else:
+        st.success("✅ Félicitations ! Aucun document frauduleux ou erroné détecté.")
+
+with tabs[2]:
+    st.header("📂 Explorateur de Données")
+    zone = st.selectbox("Choisir la zone du Data Lake", ["Raw (Bronze)", "Clean (Silver)", "Curated (Gold)"])
+    layer = zone.split(" ")[0].lower()
     base_data = "data"
-    layer_dir = f"{base_data}/{layer.lower()}"
+    layer_dir = f"{base_data}/{layer}"
     
     if os.path.exists(layer_dir):
-        files = os.listdir(layer_dir)
+        files = [f for f in os.listdir(layer_dir) if os.path.isfile(os.path.join(layer_dir, f))]
         if files:
-            selected_file = st.selectbox("Select File", files)
+            selected_file = st.selectbox("Sélectionner un fichier", files)
             file_path = os.path.join(layer_dir, selected_file)
             
-            with st.expander(f"Preview: {selected_file}"):
+            with st.expander(f"Contenu : {selected_file}", expanded=True):
                 if selected_file.endswith('.json'):
                     with open(file_path, 'r', encoding='utf-8') as f:
-                        st.json(json.load(f))
+                        data = json.load(f)
+                        st.json(data)
+                        if layer == "curated":
+                             st.success(f"Classification : `{data.get('predicted_type', 'Inconnue')}`")
                 elif selected_file.endswith('.txt'):
                     with open(file_path, 'r', encoding='utf-8') as f:
                         st.text(f.read())
                 else:
-                    st.write(f"Binary file: {selected_file}")
+                    st.write("Format non textuel (Image/PDF)")
         else:
-            st.info(f"No files in the '{layer}' layer yet.")
+            st.info(f"La zone {zone} est vide.")
     else:
-        st.warning(f"Directory {layer_dir} not found. (Current CWD: {os.getcwd()})")
-
-
-with tabs[2]:
-    st.header("Validation Anomalies")
-    anomalies = list(db.anomalies.find().sort("detected_at", -1))
-    
-    if anomalies:
-        display_data = []
-        for a in anomalies:
-            doc_ids = a.get("document_ids", [])
-            filenames = []
-            if doc_ids:
-                docs = list(db.documents.find({"document_id": {"$in": doc_ids}}, {"filename": 1}))
-                filenames = [d["filename"] for d in docs]
-            
-            display_data.append({
-                "Date": a.get("detected_at"),
-                "Files": ", ".join(filenames) if filenames else "N/A",
-                "Severity": a.get("severity", "medium").upper(),
-                "Code": a.get("rule_code"),
-                "Message": a.get("message")
-            })
-            
-        df_anomalies = pd.DataFrame(display_data)
-        st.dataframe(df_anomalies, width="stretch", hide_index=True)
-    else:
-        st.success("No anomalies detected! System is healthy.")
+        st.warning(f"Répertoire {layer_dir} introuvable.")
 
 with tabs[3]:
-    st.header("📤 Batch Document Processing")
-    st.info("Upload multiple invoices, quotes, or ID documents for automated extraction and validation.")
+    st.header("📤 Pipeline de Traitement")
+    st.write("Ajouter des documents à la file d'attente.")
     
-    uploaded_files = st.file_uploader(
-        "Drop documents here", 
-        type=['pdf', 'jpg', 'png', 'jpeg', 'webp'], 
-        accept_multiple_files=True,
-        help="Supported formats: PDF, JPG, PNG, WEBP"
+    files = st.file_uploader(
+        "Déposez vos documents ici", 
+        type=['pdf', 'jpg', 'png', 'jpeg'], 
+        accept_multiple_files=True
     )
     
-    if uploaded_files:
-        st.write(f"📂 **{len(uploaded_files)}** files ready for processing.")
-        
-        if st.button("🚀 Start Pipeline", width="stretch"):
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            
+    if files:
+        if st.button("🚀 Démarrer le traitement", width="stretch"):
+            bar = st.progress(0)
             try:
-                # Construct multi-file payload for FastAPI
-                files_payload = [
-                    ("files", (f.name, f.getvalue(), f.type)) 
-                    for f in uploaded_files
-                ]
+                payload = [("files", (f.name, f.getvalue(), f.type)) for f in files]
+                bar.progress(20)
+                r = requests.post(f"{BACKEND_URL}/upload", files=payload)
+                bar.progress(100)
                 
-                status_text.text("Sending to processing engine...")
-                progress_bar.progress(30)
-                
-                resp = requests.post(f"{BACKEND_URL}/upload", files=files_payload)
-                
-                progress_bar.progress(100)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    results = data.get("results", [])
-                    alerts = data.get("cross_document_alerts", [])
-                    
-                    st.success(f"✅ Finished! {len(results)} files processed.")
-                    
-                    # Display summary in columns
-                    cols = st.columns(min(len(results), 3))
-                    for idx, res in enumerate(results):
-                        with cols[idx % 3]:
-                            with st.container(border=True):
-                                st.write(f"📄 **{res['filename']}**")
-                                st.caption(f"Status: {res['status']}")
-                                st.write(f"Type: `{res.get('document_type', 'unknown')}`")
-                                if res.get('validation'):
-                                    score = res['validation'].get('score', 0)
-                                    st.progress(score / 100, text=f"Score: {score}%")
-                    
-                    if alerts:
-                        st.warning(f"⚠️ {len(alerts)} cross-document inconsistencies detected!")
-                        with st.expander("View Alerts"):
-                            st.json(alerts)
-                            
-                    with st.expander("Full JSON Response"):
-                        st.json(data)
+                if r.status_code == 200:
+                    res = r.json()
+                    st.success(f"Analysé : {len(res.get('results', []))} fichiers.")
+                    with st.expander("Résultat détaillé"):
+                         st.json(res)
                 else:
-                    st.error(f"❌ Backend Error ({resp.status_code}): {resp.text}")
-                    
+                    st.error(f"Erreur Serveur ({r.status_code})")
             except Exception as e:
-                st.error(f"☢️ System Failure: {e}")
-            finally:
-                status_text.empty()
+                st.error(f"Erreur de connexion : {e}")
 
 # Sidebar
-st.sidebar.title("Hackathon Settings")
-st.sidebar.info("Medallion Architecture: Raw → Clean → Curated")
-if st.sidebar.button("Refresh Dashboard"):
+st.sidebar.title("Paramètres")
+st.sidebar.markdown(f"**Serveur Backend:** `{BACKEND_URL}`")
+st.sidebar.info("Architecture Medallion : Flux de données Raw → Clean → Curated")
+if st.sidebar.button("Rafraîchir"):
     st.rerun()
 
